@@ -1,0 +1,16 @@
+# --- runtime / secrets: never commit your own searches or scraped data ---
+config.yaml            # your personal copy (starts from config.example.yaml)
+config.local.yaml
+*.csv                  # scraped listings hold third-party contact info
+.seen.json
+dumps/                 # saved raw HTML
+
+# --- python ---
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
+build/
+dist/

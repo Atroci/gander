@@ -1,0 +1,88 @@
+# ============================================================================
+# gander config — copy to config.yaml and edit.
+# ----------------------------------------------------------------------------
+# HOW TO SET YOUR CRITERIA:
+#   1. Open the listing site in your browser and apply every filter you want
+#      (price, rooms, area, size, …) using its UI.
+#   2. Copy the URL from the address bar.
+#   3. Paste it under `searches:` below with the matching `site:` adapter.
+# The copied URL already encodes your criteria, so this stays in sync with what
+# you actually see on the site. No filter-DSL to learn.
+# ============================================================================
+
+searches:
+  # `site:` selects which registered adapter parses this search. Bundled: idealista.
+  # Add more sites by writing an adapter (see gander/adapters/idealista.py).
+  - name: "Example — apartments to rent in Lisboa"
+    site: idealista
+    url: "https://www.idealista.pt/arrendar-casas/lisboa/"
+
+# Post-scrape filters the site can't do itself. These keys are read by the
+# idealista adapter (Portugal-specific: owner-vs-agency, deposit/caução terms).
+# Other adapters may read different keys or ignore this block entirely.
+filters:
+  owner_only: false          # keep only private-owner listings, drop agencies
+  exclude_shared: true       # drop shared bedrooms; keep private rooms/flats
+  max_entry_multiple: 3      # max months to move in (1st month + deposit months)
+  max_price: 0               # 0 = off; else a monthly-price safety net
+  exclude_advertisers: []    # advertiser/platform names to drop, e.g. [spotahome]
+drop_failing: false          # false = write dropped rows too (audit); true = skip
+
+# How many result pages to walk per search (each page ~30 listings).
+max_pages: 3
+
+# Visit each listing's detail page for the fuller data + contact info.
+# Slower (one browser load per listing). Set false for search cards only.
+fetch_details: true
+
+# Politeness: random delay (seconds) between page loads. This is your main
+# protection against a behavioral throttle. Keep these generous.
+delay_min: 14
+delay_max: 28
+detail_delay_min: 18
+detail_delay_max: 36
+
+# Browser (stealth backend only; cdp uses your real Chrome window).
+headless: true
+block_images: true
+
+# Output
+out_csv: "listings.csv"      # results (append + dedup by listing id)
+seen_db: ".seen.json"        # remembers ids already scraped across runs
+dump_html_dir: ""            # set to a path to save raw HTML (for tuning selectors)
+
+# ----------------------------------------------------------------------------
+# ANTI-BOT BACKEND — read the README; this is the whole ballgame.
+# Many listing sites sit behind DataDome/Cloudflare. A plain robot browser from
+# a normal home IP gets a hard 403 even headful. Pick ONE backend.
+# ----------------------------------------------------------------------------
+backend: "cdp"          # "cdp" (recommended, free) | "stealth" (needs proxy) | "unlocker" (paid API)
+
+# backend: cdp  -> RECOMMENDED. Attaches to YOUR real, logged-in Chrome so the
+# site sees a genuine human session and the anti-bot lets you through.
+#   1. ./launch_chrome.sh         (opens Chrome on the debug port + a scout profile)
+#   2. log into the site in that window; solve any captcha once
+#   3. python -m gander           (leave that Chrome open)
+chrome_debug_port: 9222
+cdp_url: ""             # or a ws://.../wss:// url; blank = auto-discover from the port
+
+# backend: stealth  -> a residential/mobile proxy is effectively REQUIRED for
+# protected sites. Datacenter proxies won't cut it. Format:
+#   "http://user:pass@host:port"
+proxy: ""
+
+# backend: unlocker -> hand the URL to an anti-bot-capable unlocker API that
+# returns rendered HTML (~$1-3 / 1000 requests). Example is ZenRows-shaped;
+# adapt to your provider (ScraperAPI, Scrape.do, Bright Data, Oxylabs, …).
+# NOTE: these APIs can't click a site's "show phone" button — phones come only
+# from whatever is already in the rendered HTML.
+unlocker:
+  url: "https://api.zenrows.com/v1/"
+  url_param: "url"
+  params:
+    apikey: "YOUR_KEY"
+    js_render: "true"
+    antibot: "true"
+    premium_proxy: "true"
+    proxy_country: "pt"
+  headers: {}
